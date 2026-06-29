@@ -2081,6 +2081,42 @@ export default function App() {
 
         <Footer setScreen={setScreen} />
         <BottomNav currentScreen={currentScreen} setScreen={setScreen} cartCount={cart.length} />
+        
+        {/* ORIGIN MEDIA PREVIEW WATERMARK */}
+        <div 
+          style={{ 
+            position: "fixed", 
+            bottom: 60, 
+            left: 0, 
+            width: "100%", 
+            zIndex: 9999, 
+            pointerEvents: "none", /* Prevents the text from blocking clicks on the website */
+            mixBlendMode: "difference", 
+            overflow: "hidden", 
+            whiteSpace: "nowrap" 
+          }}
+        >
+          <div 
+            style={{ 
+              display: "inline-flex", 
+              animation: "ticker 20s linear infinite", 
+              color: "#fff", /* Pure white with 'difference' blend mode creates the negative effect */
+              fontSize: "clamp(50px, 10vw, 26px)", 
+              fontWeight: 900, /* Bold Gen-Z brutalist style */
+              textTransform: "uppercase", 
+              fontFamily: "Inter, sans-serif", 
+              letterSpacing: "0.01em", 
+            }}
+          >
+            {/* Array multiplies the text so it loops smoothly across the screen */}
+            {[...Array(6)].map((_, i) => (
+              <span key={i} style={{ padding: "0 10px" }}>
+                ORIGIN MEDIA DIGITAL BLUEPRINT PREVIEW — SOURCE CODE UNPAID ✦
+              </span>
+            ))}
+          </div>
+        </div>
+
       </div>
     </>
   );
