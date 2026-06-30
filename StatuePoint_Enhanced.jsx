@@ -22,26 +22,41 @@ const Icons = {
   Return: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><polyline points="3 3 3 8 8 8"/></svg>
 };
 
-// ── Cinematic Preloader ───────────────────────────────────────────────
+// ── Cinematic Premium Preloader ───────────────────────────────────────
+// Built around the brand mark itself (public/Main Logo.jpg) — a crown + "SP"
+// monogram on aesthetic yellow. The sequence: reveal → shine sweep → crest
+// settle with a soft scale/glow pulse → checkmark confirms → graceful exit.
 function Preloader({ onComplete }) {
+  const [phase, setPhase] = useState("entering"); // entering → shining → settled → morphing → fading
   const [progress, setProgress] = useState(0);
-  const [isFading, setIsFading] = useState(false);
 
   useEffect(() => {
-    let current = 0;
-    const interval = setInterval(() => {
-      current += 2; // Adjust speed here
-      setProgress(current);
-      if (current >= 100) {
-        clearInterval(interval);
-        setTimeout(() => {
-          setIsFading(true);
-          setTimeout(onComplete, 800); // Wait for fade transition
-        }, 400);
-      }
-    }, 25);
-    return () => clearInterval(interval);
+    const t0 = setTimeout(() => setPhase("shining"), 120);
+    const t1 = setTimeout(() => setPhase("settled"), 1500);
+    const t2 = setTimeout(() => setPhase("morphing"), 2150);
+    const t3 = setTimeout(() => setPhase("fading"), 2950);
+    const t4 = setTimeout(onComplete, 3650);
+
+    // Smooth progress counter, eased to land exactly as the checkmark draws
+    let raf;
+    const start = performance.now();
+    const duration = 2950;
+    const tick = (now) => {
+      const elapsed = now - start;
+      const pct = Math.min(1, elapsed / duration);
+      const eased = 1 - Math.pow(1 - pct, 3); // ease-out-cubic
+      setProgress(Math.round(eased * 100));
+      if (pct < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+
+    return () => {
+      clearTimeout(t0); clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4);
+      cancelAnimationFrame(raf);
+    };
   }, [onComplete]);
+
+  const isExiting = phase === "fading";
 
   return (
     <div
@@ -49,51 +64,228 @@ function Preloader({ onComplete }) {
         position: "fixed",
         inset: 0,
         zIndex: 99999,
-        background: "#0A0A0A",
+        background: "#F5C518",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        color: "#fff",
-        opacity: isFading ? 0 : 1,
-        visibility: isFading ? "hidden" : "visible",
-        transition: "opacity 0.8s cubic-bezier(0.16,1,0.3,1), visibility 0.8s",
+        opacity: isExiting ? 0 : 1,
+        transform: isExiting ? "scale(1.04)" : "scale(1)",
+        visibility: isExiting ? "hidden" : "visible",
+        transition: "opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1), visibility 0.7s",
+        overflow: "hidden",
       }}
     >
+      {/* Ambient soft radial glow breathing behind the crest */}
       <div
         style={{
-          fontSize: "clamp(24px, 5vw, 32px)",
-          fontWeight: 800,
-          letterSpacing: "0.2em",
-          fontFamily: "Inter, sans-serif",
-          transform: isFading ? "translateY(-20px)" : "translateY(0)",
-          transition: "transform 0.8s cubic-bezier(0.16,1,0.3,1)",
+          position: "absolute",
+          width: "min(70vw, 480px)",
+          height: "min(70vw, 480px)",
+          borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0) 70%)",
+          opacity: phase === "entering" ? 0 : 1,
+          transform: phase === "settled" || phase === "morphing" ? "scale(1.08)" : "scale(0.9)",
+          transition: "opacity 1s ease, transform 1.8s cubic-bezier(0.16,1,0.3,1)",
+          pointerEvents: "none",
+        }}
+      />
+
+      {/* Fine concentric rings — draw outward like a seal being stamped */}
+      <div
+        style={{
+          position: "absolute",
+          width: 220,
+          height: 220,
+          borderRadius: "50%",
+          border: "1px solid rgba(10,10,10,0.18)",
+          opacity: phase === "entering" ? 0 : phase === "fading" ? 0 : 0.7,
+          transform: phase === "entering" ? "scale(0.6)" : "scale(1)",
+          transition: "opacity 0.9s ease 0.1s, transform 1.4s cubic-bezier(0.16,1,0.3,1) 0.1s",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          width: 280,
+          height: 280,
+          borderRadius: "50%",
+          border: "1px solid rgba(10,10,10,0.10)",
+          opacity: phase === "entering" ? 0 : phase === "fading" ? 0 : 1,
+          transform: phase === "entering" ? "scale(0.5)" : "scale(1)",
+          transition: "opacity 1.1s ease 0.22s, transform 1.6s cubic-bezier(0.16,1,0.3,1) 0.22s",
+        }}
+      />
+
+      {/* Crest stage */}
+      <div
+        style={{
+          position: "relative",
+          width: 132,
+          height: 132,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
         }}
       >
-        STATUE<span style={{ color: "#F5C518" }}>.</span>POINT
+        {/* The brand crest itself — entrance: rise + scale + blur-focus */}
+        <div
+          style={{
+            position: "relative",
+            width: "100%",
+            height: "100%",
+            borderRadius: "26%",
+            overflow: "hidden",
+            boxShadow: phase === "entering"
+              ? "0 0 0 rgba(10,10,10,0)"
+              : "0 18px 50px rgba(10,10,10,0.28)",
+            transform:
+              phase === "entering" ? "translateY(22px) scale(0.82)" :
+              phase === "morphing" || phase === "settled" ? "translateY(0) scale(1.06)" :
+              "translateY(0) scale(1)",
+            opacity: phase === "entering" ? 0 : 1,
+            filter: phase === "entering" ? "blur(6px)" : "blur(0px)",
+            transition:
+              "transform 0.9s cubic-bezier(0.16,1,0.3,1), opacity 0.7s ease, filter 0.7s ease, box-shadow 0.9s ease",
+          }}
+        >
+          <img
+            src="/Main Logo.jpg"
+            alt="Statue Point"
+            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+          />
+
+          {/* Diagonal shine sweep across the crest */}
+          {phase === "shining" && (
+            <div
+              style={{
+                position: "absolute",
+                top: "-30%",
+                bottom: "-30%",
+                width: "45%",
+                background: "linear-gradient(to right, transparent, rgba(255,255,255,0.85), transparent)",
+                transform: "skewX(-22deg)",
+                animation: "shine-sweep 1.15s cubic-bezier(0.65,0,0.35,1) forwards",
+                pointerEvents: "none",
+                mixBlendMode: "overlay",
+              }}
+            />
+          )}
+
+          {/* Settle pulse — a single soft flash confirming arrival */}
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "#fff",
+              opacity: 0,
+              animation: phase === "settled" ? "settle-flash 0.5s ease-out" : "none",
+              pointerEvents: "none",
+            }}
+          />
+        </div>
+
+        {/* Checkmark confirmation badge */}
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            opacity: phase === "morphing" ? 1 : 0,
+            transition: "opacity 0.35s ease",
+          }}
+        >
+          <div
+            style={{
+              width: 46,
+              height: 46,
+              borderRadius: "50%",
+              background: "#0A0A0A",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transform: phase === "morphing" ? "scale(1)" : "scale(0.4)",
+              transition: "transform 0.45s cubic-bezier(0.34,1.56,0.64,1)",
+            }}
+          >
+            <svg viewBox="0 0 50 50" style={{ width: 24, height: 24 }}>
+              <path
+                d="M 14 27 L 22 35 L 38 15"
+                fill="none"
+                stroke="#F5C518"
+                strokeWidth="5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{
+                  strokeDasharray: 100,
+                  strokeDashoffset: phase === "morphing" ? 0 : 100,
+                  transition: "stroke-dashoffset 0.5s cubic-bezier(0.65,0,0.35,1) 0.2s",
+                }}
+              />
+            </svg>
+          </div>
+        </div>
       </div>
+
+      {/* Wordmark — fades up beneath the crest */}
       <div
         style={{
-          width: 200,
-          height: 1,
-          background: "#333",
-          marginTop: 40,
-          overflow: "hidden",
-          opacity: isFading ? 0 : 1,
-          transition: "opacity 0.4s ease",
+          marginTop: 28,
+          textAlign: "center",
+          opacity: phase === "entering" ? 0 : 1,
+          transform: phase === "entering" ? "translateY(10px)" : "translateY(0)",
+          transition: "opacity 0.8s ease 0.3s, transform 0.8s cubic-bezier(0.16,1,0.3,1) 0.3s",
         }}
       >
         <div
           style={{
-            width: `${progress}%`,
+            fontSize: 15,
+            fontWeight: 800,
+            letterSpacing: "0.32em",
+            color: "#0A0A0A",
+            fontFamily: "Inter, sans-serif",
+          }}
+        >
+          STATUE<span style={{ opacity: 0.45 }}>·</span>POINT
+        </div>
+        <div
+          style={{
+            marginTop: 6,
+            fontSize: 9,
+            letterSpacing: "0.3em",
+            color: "rgba(10,10,10,0.55)",
+            fontFamily: "JetBrains Mono, monospace",
+          }}
+        >
+          DAHISAR EAST · MUMBAI
+        </div>
+      </div>
+
+      {/* Minimal progress rule */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: "12%",
+          width: 120,
+          height: 2,
+          borderRadius: 2,
+          background: "rgba(10,10,10,0.12)",
+          overflow: "hidden",
+          opacity: phase === "entering" ? 0 : 1,
+          transition: "opacity 0.6s ease 0.4s",
+        }}
+      >
+        <div
+          style={{
             height: "100%",
-            background: "#F5C518",
-            transition: "width 0.1s linear",
+            width: `${progress}%`,
+            background: "#0A0A0A",
+            borderRadius: 2,
+            transition: "width 0.15s linear",
           }}
         />
-      </div>
-      <div style={{ marginTop: 16, fontSize: 10, letterSpacing: "0.3em", color: "#666", fontFamily: "JetBrains Mono, monospace" }}>
-        {Math.round(progress)}%
       </div>
     </div>
   );
@@ -306,27 +498,23 @@ function Navbar({ cartCount, currentScreen, setScreen }) {
             padding: 0,
             textAlign: "left",
             flexShrink: 0,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-start"
           }}
         >
-          <div
-            style={{
-              fontSize: 18,
-              fontWeight: 800,
-              letterSpacing: "0.15em",
-              color: "#0A0A0A",
-              fontFamily: "Inter, sans-serif",
-              lineHeight: 1.1,
-            }}
-          >
-            STATUE<span style={{ color: "#F5C518" }}>.</span>POINT
-          </div>
+          <img 
+            src="/Main Logo.jpg" 
+            alt="Statue Point" 
+            style={{ height: "24px", width: "auto", objectFit: "contain" }} 
+          />
           <div
             style={{
               fontSize: 8,
               letterSpacing: "0.3em",
               color: "#aaa",
               fontFamily: "JetBrains Mono, monospace",
-              marginTop: 2,
+              marginTop: 4,
             }}
           >
             DAHISAR EAST · MUMBAI
@@ -1715,8 +1903,15 @@ function Footer({ setScreen }) {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 48, marginBottom: 60 }}>
           {/* Brand */}
           <div>
-            <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: "0.15em", marginBottom: 16, fontFamily: "Inter, sans-serif" }}>
-              STATUE<span style={{ color: "#F5C518" }}>.</span>POINT
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+              <img
+                src="/Main Logo.jpg"
+                alt="Statue Point"
+                style={{ height: 28, width: 28, objectFit: "cover", borderRadius: 6, flexShrink: 0 }}
+              />
+              <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: "0.14em", fontFamily: "Inter, sans-serif" }}>
+                STATUE<span style={{ color: "#F5C518" }}>.</span>POINT
+              </div>
             </div>
             <p style={{ fontSize: 13, color: "#888", fontFamily: "Inter, sans-serif", lineHeight: 1.8 }}>
               Curating luxury-editorial wardrobes since inception. Blending modern aesthetics with Mumbai craftsmanship.
@@ -1887,7 +2082,7 @@ function HomeScreen({ setScreen, onAdd }) {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 32, borderBottom: "1px solid #f0f0f0", paddingBottom: 16 }}>
             <div>
               <div style={{ fontSize: 9, letterSpacing: "0.25em", color: "#888", fontFamily: "JetBrains Mono, monospace", marginBottom: 6 }}>CURATED COLLECTIONS</div>
-              <h2 style={{ fontSize: "clamp(20px, 5vw, 28px)", fontWeight: 800, color: "#0A0A0A", textTransform: "uppercase", fontFamily: "Inter, sans-serif", margin: 0 }}>
+              <h2 style={{ fontSize: "clamp(20px, 5vw, 28px)", fontWeight: 800, color: "#0A0A0A", textTransform: "uppercase", fontFamily: "Inter, sans-serif", fontStyle: "italic", margin: 0 }}>
                 Shop by Category
               </h2>
             </div>
@@ -1983,6 +2178,17 @@ export default function App() {
         @keyframes slideDown {
           from { opacity: 0; transform: translateY(-10px); }
           to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes shine-sweep {
+          0% { transform: translateX(-150%) skewX(-25deg); opacity: 0; }
+          10% { opacity: 1; }
+          90% { opacity: 1; }
+          100% { transform: translateX(200%) skewX(-25deg); opacity: 0; }
+        }
+        @keyframes settle-flash {
+          0% { opacity: 0; }
+          35% { opacity: 0.55; }
+          100% { opacity: 0; }
         }
 
         /* ── Premium Horizontal Scroll Magic (Mobile) ── */
