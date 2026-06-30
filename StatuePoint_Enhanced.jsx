@@ -1524,27 +1524,43 @@ function ShopScreen({ onAdd }) {
             </h1>
           </div>
 
-          {/* Filter chips */}
-          <div className="scroll-container" style={{ paddingBottom: 16, marginBottom: 16 }}>
+          {/* FIX: Filter chips container adjusted for professional row wrapping */}
+          <div 
+            style={{ 
+              display: "flex", 
+              flexDirection: "row", 
+              flexWrap: "wrap", 
+              gap: "8px", 
+              paddingBottom: 24, 
+              marginBottom: 16 
+            }}
+          >
             {categories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setFilter(cat)}
                 style={{
-                  padding: "10px 20px",
-                  background: filter === cat ? "#0A0A0A" : "#fff",
-                  color: filter === cat ? "#fff" : "#888",
-                  border: "1px solid",
+                  padding: "8px 20px",
+                  background: filter === cat ? "#0A0A0A" : "transparent",
+                  color: filter === cat ? "#fff" : "#444",
+                  border: "1.5px solid",
                   borderColor: filter === cat ? "#0A0A0A" : "#e5e5e5",
                   borderRadius: 40,
-                  fontSize: 10,
+                  fontSize: 11,
                   fontWeight: 700,
-                  letterSpacing: "0.12em",
+                  letterSpacing: "0.1em",
                   textTransform: "uppercase",
                   cursor: "pointer",
                   fontFamily: "Inter, sans-serif",
-                  transition: "all 0.3s",
+                  transition: "all 0.2s cubic-bezier(0.16,1,0.3,1)",
+                  width: "auto", /* FIX: Prevents stretching */
                   flexShrink: 0
+                }}
+                onMouseEnter={(e) => {
+                  if (filter !== cat) e.currentTarget.style.borderColor = "#0A0A0A";
+                }}
+                onMouseLeave={(e) => {
+                  if (filter !== cat) e.currentTarget.style.borderColor = "#e5e5e5";
                 }}
               >
                 {cat}
@@ -1556,8 +1572,8 @@ function ShopScreen({ onAdd }) {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(min(180px, 100%), 1fr))",
-            gap: 16,
+            gridTemplateColumns: "repeat(auto-fill, minmax(min(240px, 100%), 1fr))", /* Slightly wider cards for a cleaner look */
+            gap: 20,
           }}
         >
           {filtered.map((p) => (
@@ -1568,7 +1584,6 @@ function ShopScreen({ onAdd }) {
     </div>
   );
 }
-
 // ── Cart Screen ───────────────────────────────────────────────────────
 function CartScreen({ cart, setCart, setScreen }) {
   const total = cart.reduce((sum, item) => sum + item.price, 0);
